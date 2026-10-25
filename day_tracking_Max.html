@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day Tracking Pro - IELTS & SAT</title>
+    <!-- PWA Manifest va Service Worker -->
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js')
+            .then(reg => console.log('Service Worker ro\'yxatdan o\'tdi:', reg.scope))
+            .catch(err => console.log('Service Worker xatosi:', err));
+        });
+      }
+    </script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin: 0 0 4px 0;
+            color: var(--accent-color);
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .score-box {
+            text-align: center;
+            padding: 14px;
+            border-radius: 10px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .kpi-val {
+            font-size: 26px;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .task-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .task-row:last-child {
+            border-bottom: none;
+        }
+
+        .task-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .time-tag {
+            font-size: 11px;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .task-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        select {
+            padding: 4px 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 12px;
+        }
+
+        .advice-box {
+            border-left: 4px solid var(--accent-color);
+            padding-left: 12px;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-muted);
+        }
+
+        .advice-box strong {
+            color: var(--text-color);
+        }
+
+        button.action-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.2s;
+        }
+
+        button.action-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Heatmap Section */
+        .heatmap-container {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .heatmap-cell {
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            background-color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .level-0 { background-color: #334155; }
+        .level-1 { background-color: #065f46; }
+        .level-2 { background-color: #047857; }
+        .level-3 { background-color: #10b981; }
+
+        /* Notification Toast */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--accent-color);
+            padding: 12px 18px;
+            border-radius: 10px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+            font-size: 13px;
+            max-width: 300px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Day Tracking Pro</h1>
+        <div class="subtitle">9-Sinf | IELTS 7.0+ & SAT Tayyorgarlik Tizimi</div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('today', event)">Kunlik Reja</button>
+        <button class="tab-btn" onclick="switchTab('heatmap', event)">Heatmap (Faollik)</button>
+        <button class="tab-btn" onclick="switchTab('analytics', event)">AI Tahlil & Grafik</button>
+    </div>
+
+    <!-- TAB 1: KUNLIK REJA -->
+    <div id="tab-today" class="tab-content">
+        <div class="card">
+            <div class="dashboard-grid">
+                <div class="score-box">
+                    <span style="font-size:11px; color:var(--text-muted);">KUNLIK KPI</span>
+                    <div class="kpi-val" id="kpiValue">0%</div>
+                </div>
+                <div class="score-box">
+                    <span style="font-size:11px; color:var(--text-muted);">BAJARILDI</span>
+                    <div class="kpi-val" id="taskCount" style="color: var(--success-color);">0/0</div>
+                </div>
+            </div>
+            <div class="advice-box" id="aiAdvice">
+                Topshiriqlarni belgilang va "Saqlash & Hisoblash" tugmasini bosing.
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin:0; font-size:15px;" id="dayTitle">Jadval</h3>
+                <select id="daySelector" onchange="changeDayType()" style="padding: 6px;">
+                    <option value="AB">Sesh / Paysh / Shanba</option>
+                    <option value="CD">Dush / Chorsh / Juma</option>
+                    <option value="SUN">Yakshanba</option>
+                </select>
+            </div>
+            <div id="taskList"></div>
+            <button class="action-btn" onclick="saveAndCalculate()">Saqlash & KPI Hisoblash</button>
+        </div>
+    </div>
+
+    <!-- TAB 2: HEATMAP -->
+    <div id="tab-heatmap" class="tab-content" style="display: none;">
+        <div class="card">
+            <h3 style="margin-top:0; font-size:15px;">30 Kunlik Faollik Xaritasi (Heatmap)</h3>
+            <p style="font-size:12px; color:var(--text-muted);">Kunlik intizomingiz va bajarilgan foizlar xaritasi:</p>
+            <div class="heatmap-container" id="heatmapGrid"></div>
+            <div style="display: flex; justify-content: center; gap: 12px; margin-top: 15px; font-size: 11px; color: var(--text-muted);">
+                <span style="display:flex; align-items:center; gap:4px;"><span style="width:12px;height:12px;background:#334155;border-radius:2px;"></span> 0%</span>
+                <span style="display:flex; align-items:center; gap:4px;"><span style="width:12px;height:12px;background:#065f46;border-radius:2px;"></span> &lt;50%</span>
+                <span style="display:flex; align-items:center; gap:4px;"><span style="width:12px;height:12px;background:#047857;border-radius:2px;"></span> 50-79%</span>
+                <span style="display:flex; align-items:center; gap:4px;"><span style="width:12px;height:12px;background:#10b981;border-radius:2px;"></span> 80+ %</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: AI TAHLIL & GRAFIK -->
+    <div id="tab-analytics" class="tab-content" style="display: none;">
+        <div class="card">
+            <h3 style="margin-top:0; font-size:15px;">AI Maslahatchi & Ishlash Darajasi</h3>
+            <div id="performanceAnalysis" style="font-size: 13px; line-height: 1.6; color: var(--text-muted);">
+                Hali yetarli ma'lumot yo'q. Bir necha kun natijalaringizni kiriting.
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast">Bildirishnoma matni shu yerda</div>
+
+<script>
+    const schedules = {
+        'AB': [
+            { time: "05:10 - 05:30", title: "Uyg'onish va Tayyorgarlik" },
+            { time: "05:30 - 07:10", title: "IELTS Reading (90 min)" },
+            { time: "07:10 - 08:00", title: "Maktabga tayyorgarlik" },
+            { time: "08:00 - 13:00", title: "Maktab darslari" },
+            { time: "13:30 - 14:00", title: "To'garak tayyorgarligi" },
+            { time: "14:00 - 16:00", title: "Matematika to'garagi" },
+            { time: "16:10 - 17:35", title: "IELTS Listening (85 min)" },
+            { time: "17:37 - 18:25", title: "Maktab uy vazifalari" },
+            { time: "18:30 - 19:00", title: "Kechki ovqat va dam olish" },
+            { time: "19:05 - 21:10", title: "IELTS Writing + Speaking" },
+            { time: "21:15 - 22:05", title: "Extracurricular / Matematika" }
+        ],
+        'CD': [
+            { time: "05:10 - 05:30", title: "Uyg'onish va Tayyorgarlik" },
+            { time: "05:30 - 07:10", title: "IELTS Reading (90 min)" },
+            { time: "07:10 - 13:10", title: "Maktab darslari" },
+            { time: "13:10 - 14:00", title: "Tushlik va dam olish" },
+            { time: "14:00 - 15:30", title: "IELTS Listening (90 min)" },
+            { time: "15:35 - 17:20", title: "Extracurricular Activities" },
+            { time: "17:25 - 18:15", title: "Maktab uy vazifalari" },
+            { time: "18:20 - 20:00", title: "Matematika uy ishi" },
+            { time: "20:10 - 22:00", title: "IELTS Writing + Speaking" }
+        ],
+        'SUN': [
+            { time: "06:05 - 07:50", title: "IELTS Reading (Takror / Test)" },
+            { time: "07:50 - 08:25", title: "Nonushta" },
+            { time: "08:30 - 12:30", title: "Zaruriy ishlar / Extracurricular" },
+            { time: "12:35 - 13:10", title: "Tushlik" },
+            { time: "13:15 - 13:45", title: "Uy ishlari" },
+            { time: "13:50 - 14:30", title: "Power Nap / Dam olish" },
+            { time: "14:35 - 15:50", title: "IELTS Listening" },
+            { time: "16:00 - 17:20", title: "Matematika uy ishi" },
+            { time: "17:25 - 18:00", title: "Maktab uy ishlari" },
+            { time: "18:05 - 18:30", title: "Kechki ovqat" },
+            { time: "18:35 - 20:20", title: "IELTS Speaking + Writing" },
+            { time: "20:25 - 21:10", title: "Qo'shimcha tayyorgarlik" }
+        ]
+    };
+
+    function getTodayKey() {
+        const day = new Date().getDay();
+        if (day === 2 || day === 4 || day === 6) return 'AB';
+        if (day === 1 || day === 3 || day === 5) return 'CD';
+        return 'SUN';
+    }
+
+    let activeDay = getTodayKey();
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3500);
+    }
+
+    function switchTab(tabName, event) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+        if (tabName === 'today') {
+            document.getElementById('tab-today').style.display = 'block';
+            event.target.classList.add('active');
+            renderTasks();
+        } else if (tabName === 'heatmap') {
+            document.getElementById('tab-heatmap').style.display = 'block';
+            event.target.classList.add('active');
+            renderHeatmap();
+        } else if (tabName === 'analytics') {
+            document.getElementById('tab-analytics').style.display = 'block';
+            event.target.classList.add('active');
+            renderAnalytics();
+        }
+    }
+
+    function changeDayType() {
+        activeDay = document.getElementById('daySelector').value;
+        renderTasks();
+    }
+
+    function getFormattedDate(offset = 0) {
+        const d = new Date();
+        d.setDate(d.getDate() + offset);
+        return d.toISOString().split('T')[0];
+    }
+
+    function renderTasks() {
+        document.getElementById('daySelector').value = activeDay;
+        const list = document.getElementById('taskList');
+        list.innerHTML = '';
+        const todayDate = getFormattedDate();
+        const savedData = JSON.parse(localStorage.getItem('tracking_' + todayDate) || '{}');
+
+        schedules[activeDay].forEach((task, index) => {
+            const isChecked = savedData[index]?.checked ? 'checked' : '';
+            const focusVal = savedData[index]?.focus || 5;
+
+            const row = document.createElement('div');
+            row.className = 'task-row';
+            row.innerHTML = `
+                <div class="task-info">
+                    <span class="time-tag">${task.time}</span>
+                    <span class="task-title">${task.title}</span>
+                </div>
+                <div class="task-controls">
+                    <select id="focus_${index}">
+                        <option value="5" ${focusVal == 5 ? 'selected' : ''}>5 ★</option>
+                        <option value="4" ${focusVal == 4 ? 'selected' : ''}>4 ★</option>
+                        <option value="3" ${focusVal == 3 ? 'selected' : ''}>3 ★</option>
+                        <option value="2" ${focusVal == 2 ? 'selected' : ''}>2 ★</option>
+                        <option value="1" ${focusVal == 1 ? 'selected' : ''}>1 ★</option>
+                    </select>
+                    <input type="checkbox" id="check_${index}" ${isChecked}>
+                </div>
+            `;
+            list.appendChild(row);
+        });
+        calculateKPI(false);
+    }
+
+    function saveAndCalculate() {
+        const todayDate = getFormattedDate();
+        const data = {};
+        schedules[activeDay].forEach((_, index) => {
+            data[index] = {
+                checked: document.getElementById(`check_${index}`).checked,
+                focus: parseInt(document.getElementById(`focus_${index}`).value)
+            };
+        });
+        localStorage.setItem('tracking_' + todayDate, JSON.stringify(data));
+        calculateKPI(true);
+        showToast("Ma'lumotlar saqlandi va KPI hisoblandi! 🚀");
+    }
+
+    function calculateKPI(showAlert = false) {
+        const todayDate = getFormattedDate();
+        const savedData = JSON.parse(localStorage.getItem('tracking_' + todayDate) || '{}');
+        const totalTasks = schedules[activeDay].length;
+        let completed = 0;
+        let totalFocus = 0;
+
+        for (let i = 0; i < totalTasks; i++) {
+            if (savedData[i]?.checked) {
+                completed++;
+                totalFocus += (savedData[i]?.focus || 5);
+            }
+        }
+
+        const completionRate = totalTasks > 0 ? (completed / totalTasks) * 100 : 0;
+        const avgFocus = completed > 0 ? (totalFocus / completed) : 0;
+        const kpi = Math.round((completionRate * 0.7) + (avgFocus * 20 * 0.3));
+
+        document.getElementById('kpiValue').innerText = kpi + '%';
+        document.getElementById('taskCount').innerText = `${completed}/${totalTasks}`;
+
+        let history = JSON.parse(localStorage.getItem('tracking_history') || '{}');
+        history[todayDate] = kpi;
+        localStorage.setItem('tracking_history', JSON.stringify(history));
+
+        let advice = "";
+        if (kpi >= 85) {
+            advice = "<strong>Ajoyib natija! (KPI ≥ 85%)</strong><br>Intizomingiz mukammal. Kechgi 22:30 da uxlashni unutmang, bilimlar miyada konsolidatsiya bo'ladi.";
+        } else if (kpi >= 65) {
+            advice = "<strong>Yaxshi (KPI: 65-84%)</strong><br>Asosiy qism bajarildi. Diqqatni yanada oshirish uchun tushlikdan keyin qisqa tanaffus qiling.";
+        } else {
+            advice = "<strong>Diqqat talab etiladi (KPI < 65%)</strong><br>Bugun topshiriqlar yetarlicha bajarilmadi. Ertangi kunga rejalarni to'g'rilang va charchoqqa yo'l qo'ymang.";
+        }
+        document.getElementById('aiAdvice').innerHTML = advice;
+    }
+
+    function renderHeatmap() {
+        const grid = document.getElementById('heatmapGrid');
+        grid.innerHTML = '';
+        let history = JSON.parse(localStorage.getItem('tracking_history') || '{}');
+
+        for (let i = 29; i >= 0; i--) {
+            const dateStr = getFormattedDate(-i);
+            const kpi = history[dateStr] || 0;
+            
+            let levelClass = 'level-0';
+            if (kpi > 0 && kpi < 50) levelClass = 'level-1';
+            else if (kpi >= 50 && kpi < 80) levelClass = 'level-2';
+            else if (kpi >= 80) levelClass = 'level-3';
+
+            const cell = document.createElement('div');
+            cell.className = `heatmap-cell ${levelClass}`;
+            cell.title = `${dateStr}: KPI ${kpi}%`;
+            cell.innerText = i === 0 ? 'Bug' : '';
+            grid.appendChild(cell);
+        }
+    }
+
+    function renderAnalytics() {
+        let history = JSON.parse(localStorage.getItem('tracking_history') || '{}');
+        let values = Object.values(history);
+        if (values.length === 0) {
+            document.getElementById('performanceAnalysis').innerHTML = "Hali kunlik ma'lumotlar kiritilmagan. Bugungi rejalarni bajaring va saqlang!";
+            return;
+        }
+
+        let avgKpi = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+        let statusText = avgKpi >= 80 ? "Ajoyib darajada (Barqaror intizom 🚀)" : avgKpi >= 60 ? "O'rtacha darajada (Yaxshilash imkoniyati bor 📈)" : "Past darajada (Intizomni kuchaytirish kerak ⚠️)";
+
+        document.getElementById('performanceAnalysis').innerHTML = `
+            <strong>Umumiy o'rtacha KPI:</strong> <span style="color:var(--accent-color); font-size:18px; font-weight:bold;">${avgKpi}%</span><br>
+            <strong>Hozirgi holat:</strong> ${statusText}<br><br>
+            <strong>Tavsiya:</strong> 9-sinf o'quvchisi sifatida IELTS 7.0+ va SAT maqsadiga erishish uchun har kuni ertalabki Reading blokini qoldirmaslik va xatolar jurnalini yuritish asosiy muvaffaqiyat kalitidir.
+        `;
+    }
+
+    renderTasks();
+</script>
+
+</body>
+</html>
